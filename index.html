@@ -1,75 +1,69 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>Vocabulary Dictation (中文/English)</title>
+  <title>词汇听写（Vocabulary Dictation）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root {
-      --accent: #3b82f6;
-      --bg: #f8fafc;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #e2e8f0;
-    }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans", "Microsoft YaHei", "PingFang SC", sans-serif;
-           background: var(--bg); color: var(--text); margin: 0; }
-    header { background: white; border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
-    main { max-width: 960px; margin: 1rem auto; padding: 0 1rem; }
-    h1 { margin: 0; font-size: 1.25rem; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 2fr 1fr; } }
-    section { background: white; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; }
-    label { display: block; margin-top: 0.5rem; font-weight: 600; }
-    textarea { width: 100%; min-height: 220px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; resize: vertical; }
-    input[type="number"], select, input[type="file"] { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.5rem; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-    button { padding: 0.55rem 0.9rem; border: 1px solid var(--border); border-radius: 0.6rem; background: white; cursor: pointer; }
-    button.primary { background: var(--accent); color: white; border-color: var(--accent); }
-    button.danger { background: #ef4444; color: white; border-color: #ef4444; }
-    .muted { color: var(--muted); font-size: 0.9rem; }
-    .pill { display: inline-block; background: #eef2ff; color: #4338ca; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.8rem; }
-    .dropzone { border: 2px dashed var(--border); border-radius: 0.6rem; padding: 1rem; text-align: center; color: var(--muted); }
-    .progress { height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
-    .bar { height: 100%; width: 0%; background: var(--accent); transition: width 0.2s ease; }
-    .small { font-size: 0.85rem; }
+    :root { --accent:#3b82f6; --bg:#f8fafc; --text:#0f172a; --muted:#475569; --border:#e2e8f0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Microsoft YaHei", "PingFang SC", sans-serif; background:var(--bg); color:var(--text); margin:0; }
+    header { background:white; border-bottom:1px solid var(--border); padding:1rem 1.25rem; }
+    main { max-width:960px; margin:1rem auto; padding:0 1rem; }
+    h1 { margin:0; font-size:1.25rem; }
+    .grid { display:grid; grid-template-columns:1fr; gap:1rem; }
+    @media (min-width:900px){ .grid { grid-template-columns:2fr 1fr; } }
+    section { background:white; border:1px solid var(--border); border-radius:0.75rem; padding:1rem; }
+    label { display:block; margin-top:0.5rem; font-weight:600; }
+    textarea { width:100%; min-height:220px; padding:0.75rem; border:1px solid var(--border); border-radius:0.5rem; resize:vertical; }
+    input[type="number"], select, input[type="file"] { width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:0.5rem; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+    .controls { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem; }
+    button { padding:0.55rem 0.9rem; border:1px solid var(--border); border-radius:0.6rem; background:white; cursor:pointer; }
+    button.primary { background:var(--accent); color:white; border-color:var(--accent); }
+    button.danger { background:#ef4444; color:white; border-color:#ef4444; }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+    .muted { color:var(--muted); font-size:0.9rem; }
+    .pill { display:inline-block; background:#eef2ff; color:#4338ca; padding:0.25rem 0.5rem; border-radius:999px; font-size:0.8rem; }
+    .dropzone { border:2px dashed var(--border); border-radius:0.6rem; padding:1rem; text-align:center; color:var(--muted); }
+    .progress { height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; }
+    .bar { height:100%; width:0%; background:var(--accent); transition:width 0.2s ease; }
+    .small { font-size:0.85rem; }
     .list { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Vocabulary Dictation（词汇听写）</h1>
-    <div class="muted small">Type words, upload TXT/CSV, or take a photo to OCR → speak with pauses & repeats</div>
+    <h1>词汇听写（Vocabulary Dictation）</h1>
+    <div class="muted small">支持手动输入 / TXT/CSV 上传 / 图片OCR；每次朗读一个词，可配置停顿与重复。</div>
   </header>
 
   <main class="grid">
-    <!-- Left: Word list and inputs -->
+    <!-- 左侧：词列表与输入 -->
     <section>
-      <label>Words / phrases（每行一个）</label>
-      <textarea id="words" placeholder="Enter one word per line... e.g.&#10;apple&#10;香蕉&#10;orange&#10;词汇">apple
+      <label>词/短语（每行一个）</label>
+      <textarea id="words" placeholder="每行一个，例如：\napple\n香蕉\norange\n词汇">apple
 香蕉
 orange
 词汇</textarea>
       <div class="controls">
-        <button id="clearBtn">Clear</button>
-        <button id="dedupeBtn">Remove duplicates</button>
-        <button id="shuffleBtn">Shuffle</button>
-        <button id="exportBtn">Export .txt</button>
-        <span class="pill"><span id="count">4</span> items</span>
+        <button id="clearBtn">清空</button>
+        <button id="dedupeBtn">去重</button>
+        <button id="shuffleBtn">打乱顺序</button>
+        <button id="exportBtn">导出 .txt</button>
+        <span class="pill"><span id="count">4</span> 条</span>
       </div>
 
       <hr>
       <div class="row">
         <div>
-          <label>Upload TXT/CSV</label>
+          <label>上传 TXT/CSV</label>
           <input id="fileInput" type="file" accept=".txt,.csv">
-          <div class="muted small">TXT: one per line; CSV: first column used</div>
+          <div class="muted small">TXT：每行一个；CSV：使用第一列</div>
         </div>
         <div>
-          <label>Take photo / upload image（拍照或上传图片）</label>
+          <label>拍照/上传图片（OCR）</label>
           <input id="imageInput" type="file" accept="image/*" capture="environment">
-          <div class="muted small">OCR language:
+          <div class="muted small">OCR 语言：
             <select id="ocrLang">
               <option value="eng">English (eng)</option>
               <option value="chi_sim" selected>简体中文 (chi_sim)</option>
@@ -79,67 +73,75 @@ orange
         </div>
       </div>
 
-      <div class="dropzone" id="dropzone">Drag & drop image here for OCR（拖拽图片到此处）</div>
+      <div class="dropzone" id="dropzone">将图片拖到此处进行 OCR</div>
       <div id="ocrStatus" class="muted small"></div>
       <div class="progress" style="margin-top:0.5rem;"><div class="bar" id="ocrBar"></div></div>
       <div id="ocrPreview" class="small list" style="white-space: pre-wrap; margin-top:0.5rem;"></div>
     </section>
 
-    <!-- Right: Dictation controls -->
+    <!-- 右侧：朗读控制 -->
     <section>
-      <label>Language per word（语言选择）</label>
+      <label>语言选择（每词）</label>
       <select id="lang">
-        <option value="auto" selected>Auto detect (中文→zh-CN; else en-US)</option>
-        <option value="en-US">English (en-US)</option>
-        <option value="zh-CN">中文（普通话 zh-CN）</option>
+        <option value="auto" selected>自动（含中文→zh-CN，否则 en-US）</option>
+        <option value="en-US">仅英语（en-US）</option>
+        <option value="zh-CN">仅中文（zh-CN）</option>
       </select>
 
-      <label>Voice（声线）</label>
-      <select id="voice"><option value="">(auto choose)</option></select>
-      <div class="muted small">Tip: Install system voices for better Chinese/English quality (Windows: Language & Region; macOS: Accessibility → Spoken Content).</div>
+      <label>声线（Voice）</label>
+      <select id="voice"><option value="">（自动选择）</option></select>
+      <div class="muted small">如中文/英文声音不理想，安装系统语音包后重启浏览器。</div>
 
       <div class="row">
         <div>
-          <label>Pause between words (seconds)</label>
+          <label>每词停顿（秒）</label>
           <input id="pause" type="number" value="3" min="0" step="0.5">
         </div>
         <div>
-          <label>Repeat each word</label>
+          <label>重复次数</label>
           <input id="repeat" type="number" value="1" min="1">
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>Speech rate（语速 0.5–2.0）</label>
+          <label>语速（0.5–2.0）</label>
           <input id="rate" type="number" value="1.0" min="0.5" max="2" step="0.1">
         </div>
         <div>
-          <label>Volume（音量 0.0–1.0）</label>
+          <label>音量（0.0–1.0）</label>
           <input id="volume" type="number" value="1.0" min="0" max="1" step="0.1">
         </div>
       </div>
 
       <div class="controls">
-        <button id="startBtn" class="primary">Start Dictation</button>
-        <button id="stopBtn" class="danger">Stop</button>
+        <button id="speakCurrentBtn" class="primary">朗读当前行</button>
+        <button id="startBtn">按列表逐个朗读</button>
+        <button id="stopBtn" class="danger">停止</button>
       </div>
 
       <div id="status" class="muted small" style="margin-top:0.5rem;"></div>
     </section>
   </main>
 
-  <!-- Tesseract.js (client-side OCR). If CDN is blocked, host locally and change src to ./tesseract.min.js -->
+  <!-- Tesseract.js：如 CDN 受限，可改为本地 ./tesseract.min.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
 
   <script>
-    /*** ---------- Voice setup (Web Speech API) ---------- ***/
+    /*** ------------ 工具函数 ------------ ***/
+    const $ = id => document.getElementById(id);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    /*** ------------ 语音（Web Speech API） ------------ ***/
     let voices = [];
-    const voiceSelect = document.getElementById('voice');
+    let voicesReady = false;
+    const voiceSelect = $('voice');
 
     function populateVoices() {
       voices = window.speechSynthesis.getVoices();
-      voiceSelect.innerHTML = '<option value="">(auto choose)</option>';
+      if (!voices || !voices.length) return; // 避免早期空列表
+      voicesReady = true;
+      voiceSelect.innerHTML = '<option value="">（自动选择）</option>';
       voices.forEach((v, idx) => {
         const opt = document.createElement('option');
         opt.value = idx;
@@ -150,6 +152,11 @@ orange
     populateVoices();
     window.speechSynthesis.onvoiceschanged = populateVoices;
 
+    async function ensureVoicesReady() {
+      // 某些浏览器需等待语音加载完毕
+      for (let i = 0; i < 20 && !voicesReady; i++) { await sleep(100); populateVoices(); }
+    }
+
     function detectLang(text) {
       return Array.from(text).some(ch => ch >= '\u4e00' && ch <= '\u9fff') ? 'zh-CN' : 'en-US';
     }
@@ -157,41 +164,88 @@ orange
       if (explicitIndex !== "") {
         return voices[Number(explicitIndex)] || null;
       }
+      // 优先精确匹配
       const exact = voices.find(v => v.lang === lang);
       if (exact) return exact;
+      // 其次语系匹配
       const family = voices.find(v => v.lang && v.lang.startsWith(lang.split('-')[0]));
       return family || null;
     }
 
     async function speakWord(text, lang, voice, rate, volume) {
+      // 关键修复：清空队列，避免出现“双重声音”或累积读取
+      window.speechSynthesis.cancel();
+      await sleep(150); // 让浏览器完成清空
+
+      await ensureVoicesReady();
+
       return new Promise((resolve, reject) => {
         const utter = new SpeechSynthesisUtterance(text);
         if (voice) utter.voice = voice;
         utter.lang = lang;
         utter.rate = rate;
         utter.volume = volume;
-        utter.onend = () => resolve();
-        utter.onerror = e => reject(e);
+        utter.onend = () => { resolve(); };
+        utter.onerror = e => { console.error(e); reject(e); };
         window.speechSynthesis.speak(utter);
       });
     }
 
-    /*** ---------- Dictation flow ---------- ***/
-    let cancelRequested = false;
-    const $ = id => document.getElementById(id);
-
+    /*** ------------ 文本处理 ------------ ***/
     function getLines() {
       const lines = $('words').value.split('\n').map(s => s.trim()).filter(Boolean);
       $('count').textContent = lines.length;
       return lines;
     }
 
-    async function startDictation() {
+    function getCurrentLineText() {
+      const ta = $('words');
+      const value = ta.value;
+      const pos = ta.selectionStart || 0;
+      const start = value.lastIndexOf('\n', Math.max(0, pos - 1)) + 1; // 行首
+      const endIdx = value.indexOf('\n', pos);
+      const end = endIdx === -1 ? value.length : endIdx; // 行尾
+      const line = value.slice(start, end).trim();
+      return line;
+    }
+
+    /*** ------------ 朗读流程 ------------ ***/
+    let cancelRequested = false;
+    let speaking = false;
+
+    async function speakOne(text) {
+      if (!text) { $('status').textContent = '当前行为空'; return; }
+      speaking = true;
+      $('status').textContent = `朗读：${text}`;
+      const langSetting = $('lang').value;
+      const voiceIndex = $('voice').value;
+      const rate = Math.max(0.5, Math.min(2.0, Number($('rate').value) || 1.0));
+      const volume = Math.max(0, Math.min(1.0, Number($('volume').value) || 1.0));
+      const repeat = Math.max(1, Number($('repeat').value) || 1);
+      const pauseSec = Math.max(0, Number($('pause').value) || 0);
+
+      const lang = langSetting === 'auto' ? detectLang(text) : langSetting;
+      const voice = chooseVoice(lang, voiceIndex);
+
+      for (let i = 0; i < repeat; i++) {
+        if (cancelRequested) break;
+        try { await speakWord(text, lang, voice, rate, volume); } catch (e) {}
+        if (i < repeat - 1) { await sleep(pauseSec * 1000); }
+      }
+      speaking = false;
+      $('status').textContent = cancelRequested ? '已停止' : '完成';
+    }
+
+    async function startDictationSequential() {
+      if (speaking) return; // 防连点
       cancelRequested = false;
-      $('status').textContent = 'Speaking...';
+      $('startBtn').disabled = true;
+      $('speakCurrentBtn').disabled = true;
+      $('status').textContent = '开始逐个朗读…';
+
       const lines = getLines();
-      const pauseSec = Number($('pause').value) || 3;
-      const repeat = Number($('repeat').value) || 1;
+      const pauseSec = Math.max(0, Number($('pause').value) || 0);
+      const repeat = Math.max(1, Number($('repeat').value) || 1);
       const langSetting = $('lang').value;
       const voiceIndex = $('voice').value;
       const rate = Math.max(0.5, Math.min(2.0, Number($('rate').value) || 1.0));
@@ -203,15 +257,35 @@ orange
         const voice = chooseVoice(lang, voiceIndex);
         for (let i = 0; i < repeat; i++) {
           if (cancelRequested) break;
-          try { await speakWord(word, lang, voice, rate, volume); } catch (err) { console.error(err); }
-          await new Promise(r => setTimeout(r, pauseSec * 1000));
+          try { await speakWord(word, lang, voice, rate, volume); } catch (e) {}
+          if (i < repeat - 1) { await sleep(pauseSec * 1000); }
         }
+        // 每个词之间的停顿
+        await sleep(pauseSec * 1000);
       }
-      $('status').textContent = cancelRequested ? 'Stopped.' : 'Done.';
+
+      $('startBtn').disabled = false;
+      $('speakCurrentBtn').disabled = false;
+      $('status').textContent = cancelRequested ? '已停止' : '完成';
     }
 
-    $('startBtn').onclick = startDictation;
-    $('stopBtn').onclick = () => { cancelRequested = true; window.speechSynthesis.cancel(); $('status').textContent = 'Stopped.'; };
+    /*** ------------ 事件绑定 ------------ ***/
+    $('speakCurrentBtn').onclick = async () => {
+      cancelRequested = false;
+      const line = getCurrentLineText();
+      await speakOne(line);
+    };
+
+    $('startBtn').onclick = startDictationSequential;
+    $('stopBtn').onclick = async () => {
+      cancelRequested = true;
+      window.speechSynthesis.cancel();
+      await sleep(150);
+      $('status').textContent = '已停止';
+      speaking = false;
+      $('startBtn').disabled = false;
+      $('speakCurrentBtn').disabled = false;
+    };
 
     $('clearBtn').onclick = () => { $('words').value = ''; $('count').textContent = '0'; };
     $('dedupeBtn').onclick = () => {
@@ -229,21 +303,18 @@ orange
       $('count').textContent = arr.length;
     };
     $('exportBtn').onclick = () => {
-      const blob = new Blob([$('words').value], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([$('words').value], { type:'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'words.txt'; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = 'words.txt'; a.click();
       URL.revokeObjectURL(url);
     };
 
-    /*** ---------- TXT/CSV upload ---------- ***/
+    /*** ------------ 文件上传（TXT/CSV） ------------ ***/
     $('fileInput').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const text = await file.text();
-      let lines = [];
+      const file = e.target.files[0]; if (!file) return;
+      const text = await file.text(); let lines = [];
       if (file.name.toLowerCase().endsWith('.csv')) {
-        lines = text.split('\n').map(row => (row.split(',')[0] || '').trim()).filter(Boolean);
+        lines = text.split('\n').map(row => (row.split(',')[0]||'').trim()).filter(Boolean);
       } else {
         lines = text.split('\n').map(s => s.trim()).filter(Boolean);
       }
@@ -253,7 +324,7 @@ orange
       e.target.value = '';
     });
 
-    /*** ---------- OCR (Tesseract.js) ---------- ***/
+    /*** ------------ OCR（Tesseract.js） ------------ ***/
     const dropzone = $('dropzone');
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#93c5fd'; });
     dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });
@@ -261,51 +332,38 @@ orange
       e.preventDefault(); dropzone.style.borderColor = 'var(--border)';
       if (e.dataTransfer.files?.[0]) runOCR(e.dataTransfer.files[0]);
     });
-
     $('imageInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      runOCR(file);
-      e.target.value = '';
+      const file = e.target.files[0]; if (!file) return; runOCR(file); e.target.value='';
     });
 
     async function runOCR(file) {
-      $('ocrStatus').textContent = 'Running OCR...';
-      $('ocrBar').style.width = '0%';
+      $('ocrStatus').textContent = 'OCR 处理中…'; $('ocrBar').style.width = '0%';
       const lang = $('ocrLang').value;
       try {
         const { data } = await Tesseract.recognize(file, lang, {
-          logger: m => {
-            if (m.status === 'recognizing text' && m.progress != null) {
-              $('ocrBar').style.width = (m.progress * 100).toFixed(0) + '%';
-            }
-          }
+          logger: m => { if (m.status === 'recognizing text' && m.progress != null) { $('ocrBar').style.width = (m.progress*100).toFixed(0)+'%'; } }
         });
         $('ocrPreview').textContent = (data.text || '').trim();
         const extracted = postProcessOCR(data.text || '');
         const current = getLines();
         $('words').value = [...current, ...extracted].join('\n');
         $('count').textContent = getLines().length;
-        $('ocrStatus').textContent = `OCR complete: added ${extracted.length} items.`;
+        $('ocrStatus').textContent = `OCR 完成：新增 ${extracted.length} 条。`;
       } catch (err) {
         console.error(err);
-        $('ocrStatus').textContent = 'OCR error. Try a clearer photo or different language.';
+        $('ocrStatus').textContent = 'OCR 出错，请重试或更换语言/更清晰图片。';
       }
     }
 
     function postProcessOCR(text) {
       let t = text.replace(/\r/g, '\n');
-      t = t.replace(/[，、；。]/g, '\n'); // Chinese punctuations → newline
-      t = t.replace(/[;,]/g, '\n');     // English punctuations → newline
-      const tokens = t.split('\n')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .map(s => s.replace(/\s+/g, ' '));
-      const out = [];
-      const seen = new Set();
+      t = t.replace(/[，、；。]/g, '\n'); // 中文标点 → 换行
+      t = t.replace(/[;,]/g, '\n');     // 英文标点 → 换行
+      const tokens = t.split('\n').map(s => s.trim()).filter(Boolean).map(s => s.replace(/\s+/g, ' '));
+      const out = []; const seen = new Set();
       for (const tok of tokens) {
-        const isChinese = Array.from(tok).some(ch => ch >= '\u4e00' && ch <= '\u9fff');
-        if (tok.length < 2 && !isChinese) continue;
+        const isZh = Array.from(tok).some(ch => ch >= '\u4e00' && ch <= '\u9fff');
+        if (tok.length < 2 && !isZh) continue; // 过滤噪音
         if (!seen.has(tok)) { seen.add(tok); out.push(tok); }
       }
       return out;
