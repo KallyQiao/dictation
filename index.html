@@ -128,246 +128,118 @@ orange
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
 
   <script>
-    /*** ------------ 工具函数 ------------ ***/
+    /*** ------------ 工具 & 计数 ------------ ***/
     const $ = id => document.getElementById(id);
     const sleep = ms => new Promise(r => setTimeout(r, ms));
+    function updateCount(){
+      const lines = $('words').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      $('count').textContent = lines.length;
+    }
+    $('words').addEventListener('input', updateCount);
 
     /*** ------------ 语音（Web Speech API） ------------ ***/
-    let voices = [];
-    let voicesReady = false;
-    const voiceSelect = $('voice');
-
-    function populateVoices() {
+    let voices = []; let voicesReady = false; const voiceSelect = $('voice');
+    function populateVoices(){
       voices = window.speechSynthesis.getVoices();
-      if (!voices || !voices.length) return; // 避免早期空列表
+      if(!voices || !voices.length) return;
       voicesReady = true;
       voiceSelect.innerHTML = '<option value="">（自动选择）</option>';
-      voices.forEach((v, idx) => {
+      voices.forEach((v, idx)=>{
         const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = `${v.name} — ${v.lang}`;
-        voiceSelect.appendChild(opt);
+        opt.value = idx; opt.textContent = `${v.name} — ${v.lang}`; voiceSelect.appendChild(opt);
       });
     }
-    populateVoices();
-    window.speechSynthesis.onvoiceschanged = populateVoices;
-
-    async function ensureVoicesReady() {
-      // 某些浏览器需等待语音加载完毕
-      for (let i = 0; i < 20 && !voicesReady; i++) { await sleep(100); populateVoices(); }
-    }
-
-    function detectLang(text) {
-      return Array.from(text).some(ch => ch >= '\u4e00' && ch <= '\u9fff') ? 'zh-CN' : 'en-US';
-    }
-    function chooseVoice(lang, explicitIndex) {
-      if (explicitIndex !== "") {
-        return voices[Number(explicitIndex)] || null;
-      }
-      // 优先精确匹配
-      const exact = voices.find(v => v.lang === lang);
-      if (exact) return exact;
-      // 其次语系匹配
-      const family = voices.find(v => v.lang && v.lang.startsWith(lang.split('-')[0]));
-      return family || null;
-    }
-
-    async function speakWord(text, lang, voice, rate, volume) {
-      // 关键修复：清空队列，避免出现“双重声音”或累积读取
-      window.speechSynthesis.cancel();
-      await sleep(150); // 让浏览器完成清空
-
-      await ensureVoicesReady();
-
-      return new Promise((resolve, reject) => {
+    populateVoices(); window.speechSynthesis.onvoiceschanged = populateVoices;
+    async function ensureVoicesReady(){ for(let i=0;i<20 && !voicesReady;i++){ await sleep(100); populateVoices(); } }
+    function detectLang(text){ return Array.from(text).some(ch=>ch>='\u4e00' && ch<='\u9fff') ? 'zh-CN' : 'en-US'; }
+    function chooseVoice(lang, explicitIndex){ if(explicitIndex !== '') return voices[Number(explicitIndex)]||null; const exact = voices.find(v=>v.lang===lang); if(exact) return exact; const family = voices.find(v=>v.lang && v.lang.startsWith(lang.split('-')[0])); return family || null; }
+    async function speakWord(text, lang, voice, rate, volume){
+      window.speechSynthesis.cancel(); await sleep(150); await ensureVoicesReady();
+      return new Promise((resolve, reject)=>{
         const utter = new SpeechSynthesisUtterance(text);
-        if (voice) utter.voice = voice;
-        utter.lang = lang;
-        utter.rate = rate;
-        utter.volume = volume;
-        utter.onend = () => { resolve(); };
-        utter.onerror = e => { console.error(e); reject(e); };
+        if(voice) utter.voice = voice; utter.lang = lang; utter.rate = rate; utter.volume = volume;
+        utter.onend = ()=>resolve(); utter.onerror = e=>{ console.error(e); reject(e); };
         window.speechSynthesis.speak(utter);
       });
     }
 
-    /*** ------------ 文本处理 ------------ ***/
-    function getLines() {
-      const lines = $('words').value.split('\n').map(s => s.trim()).filter(Boolean);
-      $('count').textContent = lines.length;
-      return lines;
-    }
-
-    function getCurrentLineText() {
-      const ta = $('words');
-      const value = ta.value;
-      const pos = ta.selectionStart || 0;
-      const start = value.lastIndexOf('\n', Math.max(0, pos - 1)) + 1; // 行首
-      const endIdx = value.indexOf('\n', pos);
-      const end = endIdx === -1 ? value.length : endIdx; // 行尾
-      const line = value.slice(start, end).trim();
-      return line;
-    }
-
-    /*** ------------ 朗读流程 ------------ ***/
-    let cancelRequested = false;
-    let speaking = false;
-
-    async function speakOne(text) {
-      if (!text) { $('status').textContent = '当前行为空'; return; }
-      speaking = true;
-      $('status').textContent = `朗读：${text}`;
-      const langSetting = $('lang').value;
-      const voiceIndex = $('voice').value;
-      const rate = Math.max(0.5, Math.min(2.0, Number($('rate').value) || 1.0));
-      const volume = Math.max(0, Math.min(1.0, Number($('volume').value) || 1.0));
-      const repeat = Math.max(1, Number($('repeat').value) || 1);
-      const pauseSec = Math.max(0, Number($('pause').value) || 0);
-
-      const lang = langSetting === 'auto' ? detectLang(text) : langSetting;
-      const voice = chooseVoice(lang, voiceIndex);
-
-      for (let i = 0; i < repeat; i++) {
-        if (cancelRequested) break;
-        try { await speakWord(text, lang, voice, rate, volume); } catch (e) {}
-        if (i < repeat - 1) { await sleep(pauseSec * 1000); }
+    /*** ------------ 当前行 & 列表朗读 ------------ ***/
+    function getLines(){ return $('words').value.split('\n').map(s=>s.trim()).filter(Boolean); }
+    function getCurrentLineText(){ const ta=$('words'); const value=ta.value; const pos=ta.selectionStart||0; const start=value.lastIndexOf('\n', Math.max(0,pos-1))+1; const endIdx=value.indexOf('\n', pos); const end=endIdx===-1?value.length:endIdx; return value.slice(start,end).trim(); }
+    let cancelRequested=false; let speaking=false;
+    async function speakOne(text){ if(!text){ $('status').textContent='当前行为空'; return; }
+      speaking=true; $('status').textContent=`朗读：${text}`;
+      const langSetting=$('lang').value; const voiceIndex=$('voice').value;
+      const rate=Math.max(0.5, Math.min(2.0, Number($('rate').value)||1.0));
+      const volume=Math.max(0, Math.min(1.0, Number($('volume').value)||1.0));
+      const repeat=Math.max(1, Number($('repeat').value)||1); const pauseSec=Math.max(0, Number($('pause').value)||0);
+      const lang = langSetting==='auto' ? detectLang(text) : langSetting; const voice = chooseVoice(lang, voiceIndex);
+      for(let i=0;i<repeat;i++){ if(cancelRequested) break; try{ await speakWord(text, lang, voice, rate, volume);}catch(e){} if(i<repeat-1) await sleep(pauseSec*1000); }
+      speaking=false; $('status').textContent = cancelRequested?'已停止':'完成'; }
+    async function startDictationSequential(){ if(speaking) return; cancelRequested=false; $('startBtn').disabled=true; $('speakCurrentBtn').disabled=true; $('status').textContent='开始逐个朗读…';
+      const lines=getLines(); const pauseSec=Math.max(0, Number($('pause').value)||0); const repeat=Math.max(1, Number($('repeat').value)||1);
+      const langSetting=$('lang').value; const voiceIndex=$('voice').value; const rate=Math.max(0.5, Math.min(2.0, Number($('rate').value)||1.0)); const volume=Math.max(0, Math.min(1.0, Number($('volume').value)||1.0));
+      for(const word of lines){ if(cancelRequested) break; const lang=langSetting==='auto'?detectLang(word):langSetting; const voice=chooseVoice(lang, voiceIndex);
+        for(let i=0;i<repeat;i++){ if(cancelRequested) break; try{ await speakWord(word, lang, voice, rate, volume);}catch(e){} if(i<repeat-1) await sleep(pauseSec*1000); }
+        await sleep(pauseSec*1000);
       }
-      speaking = false;
-      $('status').textContent = cancelRequested ? '已停止' : '完成';
-    }
-
-    async function startDictationSequential() {
-      if (speaking) return; // 防连点
-      cancelRequested = false;
-      $('startBtn').disabled = true;
-      $('speakCurrentBtn').disabled = true;
-      $('status').textContent = '开始逐个朗读…';
-
-      const lines = getLines();
-      const pauseSec = Math.max(0, Number($('pause').value) || 0);
-      const repeat = Math.max(1, Number($('repeat').value) || 1);
-      const langSetting = $('lang').value;
-      const voiceIndex = $('voice').value;
-      const rate = Math.max(0.5, Math.min(2.0, Number($('rate').value) || 1.0));
-      const volume = Math.max(0, Math.min(1.0, Number($('volume').value) || 1.0));
-
-      for (const word of lines) {
-        if (cancelRequested) break;
-        const lang = langSetting === 'auto' ? detectLang(word) : langSetting;
-        const voice = chooseVoice(lang, voiceIndex);
-        for (let i = 0; i < repeat; i++) {
-          if (cancelRequested) break;
-          try { await speakWord(word, lang, voice, rate, volume); } catch (e) {}
-          if (i < repeat - 1) { await sleep(pauseSec * 1000); }
-        }
-        // 每个词之间的停顿
-        await sleep(pauseSec * 1000);
-      }
-
-      $('startBtn').disabled = false;
-      $('speakCurrentBtn').disabled = false;
-      $('status').textContent = cancelRequested ? '已停止' : '完成';
-    }
-
-    /*** ------------ 事件绑定 ------------ ***/
-    $('speakCurrentBtn').onclick = async () => {
-      cancelRequested = false;
-      const line = getCurrentLineText();
-      await speakOne(line);
-    };
-
+      $('startBtn').disabled=false; $('speakCurrentBtn').disabled=false; $('status').textContent = cancelRequested?'已停止':'完成'; }
+    $('speakCurrentBtn').onclick = async ()=>{ cancelRequested=false; const line=getCurrentLineText(); await speakOne(line); };
     $('startBtn').onclick = startDictationSequential;
-    $('stopBtn').onclick = async () => {
-      cancelRequested = true;
-      window.speechSynthesis.cancel();
-      await sleep(150);
-      $('status').textContent = '已停止';
-      speaking = false;
-      $('startBtn').disabled = false;
-      $('speakCurrentBtn').disabled = false;
-    };
+    $('stopBtn').onclick = async ()=>{ cancelRequested=true; window.speechSynthesis.cancel(); await sleep(150); $('status').textContent='已停止'; speaking=false; $('startBtn').disabled=false; $('speakCurrentBtn').disabled=false; };
 
-    $('clearBtn').onclick = () => { $('words').value = ''; $('count').textContent = '0'; };
-    $('dedupeBtn').onclick = () => {
-      const set = new Set(getLines());
-      $('words').value = [...set].join('\n');
-      $('count').textContent = set.size;
-    };
-    $('shuffleBtn').onclick = () => {
-      const arr = getLines();
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      $('words').value = arr.join('\n');
-      $('count').textContent = arr.length;
-    };
-    $('exportBtn').onclick = () => {
-      const blob = new Blob([$('words').value], { type:'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'words.txt'; a.click();
-      URL.revokeObjectURL(url);
-    };
-
-    /*** ------------ 文件上传（TXT/CSV） ------------ ***/
-    $('fileInput').addEventListener('change', async (e) => {
-      const file = e.target.files[0]; if (!file) return;
-      const text = await file.text(); let lines = [];
-      if (file.name.toLowerCase().endsWith('.csv')) {
-        lines = text.split('\n').map(row => (row.split(',')[0]||'').trim()).filter(Boolean);
-      } else {
-        lines = text.split('\n').map(s => s.trim()).filter(Boolean);
-      }
-      const current = getLines();
-      $('words').value = [...current, ...lines].join('\n');
-      $('count').textContent = getLines().length;
-      e.target.value = '';
+    /*** ------------ TXT/CSV 上传 ------------ ***/
+    $('fileInput').addEventListener('change', async (e)=>{
+      const file=e.target.files[0]; if(!file) return; const text=await file.text(); let lines=[];
+      if(file.name.toLowerCase().endsWith('.csv')){ lines = text.split('\n').map(row=>(row.split(',')[0]||'').trim()).filter(Boolean); }
+      else { lines = text.split('\n').map(s=>s.trim()).filter(Boolean); }
+      const current=getLines(); const merged=[...current, ...lines]; const deduped=Array.from(new Set(merged));
+      $('words').value = deduped.join('\n'); $('words').dispatchEvent(new Event('input')); e.target.value='';
     });
 
     /*** ------------ OCR（Tesseract.js） ------------ ***/
-    const dropzone = $('dropzone');
-    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#93c5fd'; });
-    dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault(); dropzone.style.borderColor = 'var(--border)';
-      if (e.dataTransfer.files?.[0]) runOCR(e.dataTransfer.files[0]);
-    });
-    $('imageInput').addEventListener('change', (e) => {
-      const file = e.target.files[0]; if (!file) return; runOCR(file); e.target.value='';
-    });
+    const dropzone=$('dropzone');
+    dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.style.borderColor='#93c5fd'; });
+    dropzone.addEventListener('dragleave', ()=>{ dropzone.style.borderColor='var(--border)'; });
+    dropzone.addEventListener('drop', (e)=>{ e.preventDefault(); dropzone.style.borderColor='var(--border)'; const file=e.dataTransfer.files?.[0]; if(file) runOCR(file); });
+    $('imageInput').addEventListener('change', (e)=>{ const file=e.target.files[0]; if(!file) return; runOCR(file); e.target.value=''; });
 
-    async function runOCR(file) {
-      $('ocrStatus').textContent = 'OCR 处理中…'; $('ocrBar').style.width = '0%';
-      const lang = $('ocrLang').value;
-      try {
-        const { data } = await Tesseract.recognize(file, lang, {
-          logger: m => { if (m.status === 'recognizing text' && m.progress != null) { $('ocrBar').style.width = (m.progress*100).toFixed(0)+'%'; } }
-        });
-        $('ocrPreview').textContent = (data.text || '').trim();
-        const extracted = postProcessOCR(data.text || '');
-        const current = getLines();
-        $('words').value = [...current, ...extracted].join('\n');
-        $('count').textContent = getLines().length;
-        $('ocrStatus').textContent = `OCR 完成：新增 ${extracted.length} 条。`;
-      } catch (err) {
-        console.error(err);
-        $('ocrStatus').textContent = 'OCR 出错，请重试或更换语言/更清晰图片。';
-      }
+    function previewImage(file){ try{ const url=URL.createObjectURL(file); $('ocrPreview').innerHTML = `<div class="muted small">图片预览：</div><img src="${url}" style="max-width:100%; border:1px solid #eee; border-radius:6px; margin:.5rem 0;" />`; setTimeout(()=>URL.revokeObjectURL(url), 60000);}catch{} }
+
+    async function runOCR(file){
+      previewImage(file);
+      $('ocrStatus').textContent='OCR 处理中…'; $('ocrBar').style.width='0%'; const lang=$('ocrLang').value;
+      try{
+        const { data } = await Tesseract.recognize(file, lang, { logger: m=>{ if(m.status==='recognizing text' && m.progress!=null){ $('ocrBar').style.width=(m.progress*100).toFixed(0)+'%'; } } });
+        const raw=(data.text||'').trim(); if(!raw){ $('ocrStatus').textContent='未识别到文字，请换更清晰的图片或切换 OCR 语言。'; return; }
+        $('ocrPreview').textContent = raw; // 展示原始结果
+        const extracted = robustSplitAndClean(raw);
+        if(!extracted.length){ $('ocrStatus').textContent='识别成功但未提取到有效词条，请检查分隔符或内容。'; return; }
+        const current=getLines(); const merged=[...current, ...extracted]; const deduped=Array.from(new Set(merged));
+        $('words').value = deduped.join('\n'); $('words').dispatchEvent(new Event('input'));
+        $('ocrStatus').textContent = `OCR 完成：新增 ${deduped.length - current.length} 条。`;
+      }catch(err){ console.error(err); $('ocrStatus').textContent='OCR 出错：请重试或更换语言/更清晰图片。'; }
     }
 
-    function postProcessOCR(text) {
+    function robustSplitAndClean(text){
       let t = text.replace(/\r/g, '\n');
-      t = t.replace(/[，、；。]/g, '\n'); // 中文标点 → 换行
-      t = t.replace(/[;,]/g, '\n');     // 英文标点 → 换行
-      const tokens = t.split('\n').map(s => s.trim()).filter(Boolean).map(s => s.replace(/\s+/g, ' '));
-      const out = []; const seen = new Set();
-      for (const tok of tokens) {
-        const isZh = Array.from(tok).some(ch => ch >= '\u4e00' && ch <= '\u9fff');
-        if (tok.length < 2 && !isZh) continue; // 过滤噪音
-        if (!seen.has(tok)) { seen.add(tok); out.push(tok); }
-      }
+      t = t.replace(/[，、；。？！：]/g, '\n'); // 中文标点
+      t = t.replace(/[;,!?:]/g, '\n');      // 英文标点
+      let tokens = t.includes('\n') ? t.split('\n') : t.split(/\s+/);
+      tokens = tokens.map(s=>s.trim()).filter(Boolean).map(s=>s.replace(/\s+/g, ' '));
+      const out=[]; const seen=new Set();
+      for(const tok of tokens){ const isZh = Array.from(tok).some(ch=>ch>='\u4e00' && ch<='\u9fff'); if(tok.length<2 && !isZh) continue; if(!seen.has(tok)){ seen.add(tok); out.push(tok); } }
       return out;
     }
+
+    /*** ------------ 其它按钮 ------------ ***/
+    $('clearBtn').onclick = ()=>{ $('words').value=''; $('words').dispatchEvent(new Event('input')); };
+    $('dedupeBtn').onclick = ()=>{ const set=new Set(getLines()); $('words').value=[...set].join('\n'); $('words').dispatchEvent(new Event('input')); };
+    $('shuffleBtn').onclick = ()=>{ const arr=getLines(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } $('words').value=arr.join('\n'); $('words').dispatchEvent(new Event('input')); };
+    $('exportBtn').onclick = ()=>{ const blob=new Blob([$('words').value], {type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='words.txt'; a.click(); URL.revokeObjectURL(url); };
+
+    // 初始化计数
+    updateCount();
   </script>
 </body>
 </html>
